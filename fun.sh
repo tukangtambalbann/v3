@@ -17,7 +17,7 @@ purple="\e[0;33m"
 clear
 # Fungsi untuk loading animasi
 fun_bar() {
-    local -r frames='-\|/'
+    local -r frames='-\\|/'
     local -r delay=0.1
     local i=0
     while true; do
@@ -33,6 +33,13 @@ loading_animation() {
     local num_bars=${#bars_chars[@]}
     local bars_index=0
     local pid=$1
+
+    # Check if PID is valid before using ps
+    if [ -z "$pid" ] || ! kill -0 "$pid" 2>/dev/null; then
+        printf "\e[1G\e[2K" # Kembali ke awal baris dan hapus baris
+        printf "\e[31mError: Invalid or missing PID for loading animation.\e[0m\n"
+        return
+    fi
 
     while ps -p $pid > /dev/null; do
         printf "\e[1G\e[2K" # Kembali ke awal baris dan hapus baris
@@ -55,15 +62,39 @@ loading() {
     local delay=0.1
     local spin='-\|/'
 
+    # Check if PID is valid before using ps
+    if [ -z "$pid" ] || ! kill -0 "$pid" 2>/dev/null; then
+        printf "\e[1G\e[2K" # Kembali ke awal baris dan hapus baris
+        printf "\e[31mError: Invalid or missing PID for loading spinner.\e[0m\n"
+        return
+    fi
+
     while ps -p $pid > /dev/null; do
-    local temp=${spin#?}
-    printf "[%c] " "$spin"
-    local spin=$temp${spin%"$temp"}
-    sleep $delay
-    printf "\b\b\b\b\b\b"
+        local temp=${spin#?}
+        printf "[%c] " "$spin"
+        local spin=$temp${spin%"$temp"}
+        sleep $delay
+        printf "\b\b\b\b\b\b"
     done
 
     printf "    \b\b\b\b"
+}
+
+# Define print_success function
+print_success() {
+    echo -e "${OK} ${Green}$1${FONT}"
+}
+
+print_ok() {
+    echo -e "${OK} ${Green}$1${FONT}"
+}
+
+print_error() {
+    echo -e "${ERROR} ${RED}$1${FONT}"
+}
+
+print_install() {
+    echo -e "${OK} ${Green}$1${FONT}"
 }
 
 # ===================
@@ -266,7 +297,7 @@ function base_package() {
     systemctl restart chrony
     chronyc sourcestats -v
     chronyc tracking -v
-    apt install ntpdate -y
+    apt install ntpdate -y # Ensure ntpdate is installed
     ntpdate pool.ntp.org
     apt install sudo -y
     apt install ruby -y 
@@ -363,7 +394,7 @@ CITY=$(cat /root/.city)
 TIMEZONE=$(printf '%(%H:%M:%S)T')
     TEXT="
 <code>────────────────────</code>
-<b>⚡⠴𝗡𝗢𝗧𝗜𝗙 𝗜𝗡𝗦𝗧𝗔𝗟𝗟 𝗦𝗖𝗥𝗜𝗣𝗧⠦⚡</b>
+<b>⚡⠴𝗡𝗢𝗧𝗜𝗙 𝗜𝗡𝗦𝗧𝗔𝗟𝗟 𝗦𝗖�𝗜𝗣𝗧⠦⚡</b>
 <code>────────────────────</code>
 <code>User     :</code><code>$username</code>
 <code>ISP      :</code><code>$ISP</code>
@@ -945,7 +976,7 @@ clear
     nginx_install
     base_package
     make_folder_xray
-    password_default
+    #password_default # This function is not defined in the provided script, commenting out.
     pasang_ssl
     install_xray
     ssh
@@ -981,7 +1012,7 @@ complete=false
 loading &
 loading_pid=$!
 pol_in
-kill $loading_pid
+kill $loading_pid 2>/dev/null # Add 2>/dev/null to suppress "No such process" error if already killed
 printf '\r%s\n' "Task selesai."
 ################
 echo ""
@@ -1040,4 +1071,4 @@ echo "===============-[ SCRIPT BY TUKANGTAMBALBANN ]-==============="
 echo -e ""
 echo ""
 echo "" | tee -a log-install.txt
-reboot
+sudo reboot
